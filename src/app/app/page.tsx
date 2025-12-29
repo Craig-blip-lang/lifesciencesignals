@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 export default function AppHome() {
   const [email, setEmail] = useState<string>("");
   const [orgName, setOrgName] = useState<string>("");
+  const [status, setStatus] = useState<string>("");
 
   useEffect(() => {
     async function init() {
