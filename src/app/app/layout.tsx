@@ -55,29 +55,26 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             gap: 12,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {/* ✅ Logo + brand */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {/* ✅ Logo only */}
             <Link
               href="/app"
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: 10,
                 textDecoration: "none",
-                color: "#111",
               }}
             >
               <Image
-                src="/logo/logo.svg" // change to /logo/logo.png if needed
+                src="/logo/logo.svg" // change to .png if needed
                 alt="LifeScienceSignals"
-                width={220}
-                height={140}
+                width={240}
+                height={120}
                 priority
               />
-              <b>LifeScienceSignals</b>
             </Link>
 
-            <div style={{ display: "flex", gap: 8, marginLeft: 10 }}>
+            <div style={{ display: "flex", gap: 8 }}>
               <NavLink href="/app/radar" label="Radar" />
               <NavLink href="/app/filters" label="Filters" />
             </div>
