@@ -14,18 +14,22 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const NavLink = ({ href, label }: { href: string; label: string }) => {
-    const active = pathname === href;
+    // ✅ stays active on sub-routes like /app/radar/123
+    const active = pathname.startsWith(href);
+
     return (
       <Link
         href={href}
         style={{
           textDecoration: "none",
-          padding: "8px 10px",
-          borderRadius: 8,
-          border: "1px solid #ddd",
-          background: active ? "#f2f2f2" : "white",
-          color: "#111",
+          padding: "8px 12px",
+          borderRadius: 10,
+          border: active ? "1px solid #111" : "1px solid #ddd",
+          background: active ? "#111" : "white",
+          color: active ? "white" : "#111",
           fontSize: 14,
+          fontWeight: active ? 600 : 400,
+          transition: "all 0.15s ease",
         }}
       >
         {label}
@@ -64,9 +68,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 alignItems: "center",
                 textDecoration: "none",
               }}
+              title="Home"
             >
               <Image
-                src="/logo/logo.svg" // change to .png if needed
+                src="/logo/logo.svg" // change to /logo/logo.png if needed
                 alt="LifeScienceSignals"
                 width={240}
                 height={120}
@@ -101,3 +106,4 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
     </div>
   );
 }
+
