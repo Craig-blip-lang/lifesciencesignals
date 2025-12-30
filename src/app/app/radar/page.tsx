@@ -23,22 +23,74 @@ type SignalRow = {
   strength_score: number;
 };
 
+type BreakdownRow = {
+  signal_id: string;
+  title: string;
+  type: string;
+  category: string;
+  occurred_at: string;
+  strength_score: number;
+  type_weight: number;
+  recency_multiplier: number;
+  points: number;
+  rule: string;
+};
+
 function scoreBand(score: number) {
   if (score >= 150) return { label: "Hot", bg: "#111", color: "white" };
   if (score >= 100) return { label: "Warm", bg: "#f7f0d9", color: "#111" };
   return { label: "Low", bg: "#f2f2f2", color: "#111" };
 }
 
+function LegendPill({
+  label,
+  range,
+  bg,
+  border,
+}: {
+  label: string;
+  range: string;
+  bg: string;
+  border: string;
+}) {
+  return (
+    <div
+      style={{
+        border: `1px solid ${border}`,
+        background: bg,
+        borderRadius: 999,
+        padding: "6px 10px",
+        fontSize: 12,
+        display: "inline-flex",
+        gap: 8,
+        alignItems: "center",
+        color: "#111",
+        whiteSpace: "nowrap",
+      }}
+    >
+      <b>{label}</b>
+      <span style={{ color: "#444" }}>{range}</span>
+    </div>
+  );
+}
+
 export default function RadarPage() {
+  const [orgId, setOrgId] = useState<string>(""); // ✅ needed for RPC
   const [orgName, setOrgName] = useState<string>("");
+
   const [rows, setRows] = useState<RadarRow[]>([]);
   const [expandedAccountId, setExpandedAccountId] = useState<string | null>(null);
   const [signals, setSignals] = useState<Record<string, SignalRow[]>>({});
   const [status, setStatus] = useState<string>("Loading...");
   const [activeFilterName, setActiveFilterName] = useState<string>("");
 
-  // ✅ new: score explainer modal state
+  // ✅ modal state
   const [whyOpenFor, setWhyOpenFor] = useState<string | null>(null);
+
+  // ✅ breakdown state (RPC)
+  const [breakdown, setBreakdown] = useState<BreakdownRow[]>([]);
+  const [breakdownLoading, setBreakdownLoading] = useState<boolean>(false);
+  const [breakdownError, setBreakdownError] = useState<string>("");
 
   useEffect(() => {
     async function init() {
@@ -60,6 +112,7 @@ export default function RadarPage() {
       }
 
       const theOrgId = memberships[0].org_id as string;
+      setOrgId(theOrgId);
 
       const { data: org, error: orgErr } = await supabase
         .from("orgs")
@@ -161,19 +214,39 @@ export default function RadarPage() {
   }
 
   async function openWhy(accountId: string) {
-    // ensure signals are loaded so we can explain
-    await loadSignals(accountId);
+    if (!orgId) return;
+
     setWhyOpenFor(accountId);
+    setBreakdown([]);
+    setBreakdownError("");
+    setBreakdownLoading(true);
+
+    const { data, error } = await supabase.rpc("get_score_breakdown", {
+      p_org_id: orgId,
+      p_account_id: accountId,
+      p_limit: 10,
+    });
+
+    setBreakdownLoading(false);
+
+    if (error) {
+      console.error(error);
+      setBreakdownError(error.message || "Could not load breakdown.");
+      return;
+    }
+
+    setBreakdown((data as BreakdownRow[]) || []);
   }
 
   function closeWhy() {
     setWhyOpenFor(null);
+    setBreakdown([]);
+    setBreakdownError("");
+    setBreakdownLoading(false);
   }
 
   const whyRow = whyOpenFor ? rows.find((r) => r.account_id === whyOpenFor) : null;
-  const whySignals = whyOpenFor ? signals[whyOpenFor] || [] : [];
-
-  const approxSignalTotal = whySignals.reduce((sum, s) => sum + (s.strength_score || 0), 0);
+  const breakdownTotal = breakdown.reduce((sum, b) => sum + (b.points || 0), 0);
 
   return (
     <div>
@@ -203,9 +276,38 @@ export default function RadarPage() {
             ) : null}
           </div>
         </div>
+
+        {/* ✅ Legend */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <LegendPill label="Low" range="0–100" bg="#f7f7f7" border="#ddd" />
+          <LegendPill label="Warm" range="100–149" bg="#fff7e6" border="#f0d9a8" />
+          <LegendPill label="Hot" range="150+" bg="#ffecec" border="#f0b3b3" />
+        </div>
       </div>
 
       <hr style={{ margin: "18px 0" }} />
+
+      {/* ✅ Radar explainer text */}
+      <div
+        style={{
+          border: "1px solid #ddd",
+          borderRadius: 12,
+          padding: 14,
+          background: "white",
+          marginBottom: 14,
+        }}
+      >
+        <div style={{ fontWeight: 800, marginBottom: 6 }}>How to use Account Radar</div>
+        <div style={{ color: "#444", lineHeight: 1.55 }}>
+          <b>Account Radar</b> ranks companies by how likely they are to be actively buying — based on real-world
+          signals. Each account receives a <b>Buying Pressure</b> score combining signal strength and recency. Higher
+          scores indicate stronger, more recent buying intent.
+          <div style={{ marginTop: 10, color: "#444" }}>
+            Use <b>View signals</b> to see recent activity behind the score, and <b>Why this score?</b> for the point-by-point
+            breakdown.
+          </div>
+        </div>
+      </div>
 
       {status && <p style={{ marginTop: 0 }}>{status}</p>}
 
@@ -294,7 +396,7 @@ export default function RadarPage() {
         })}
       </div>
 
-      {/* ✅ Simple modal for score explanation */}
+      {/* ✅ Modal for score explanation (RPC-backed) */}
       {whyOpenFor && whyRow && (
         <div
           onClick={closeWhy}
@@ -312,7 +414,7 @@ export default function RadarPage() {
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              width: "min(720px, 100%)",
+              width: "min(760px, 100%)",
               background: "white",
               borderRadius: 14,
               border: "1px solid #ddd",
@@ -344,9 +446,9 @@ export default function RadarPage() {
             <hr style={{ margin: "14px 0" }} />
 
             <div style={{ color: "#444", lineHeight: 1.5 }}>
-              This is a simple breakdown using the most recent signals we have for this account. Each signal has a{" "}
-              <b>strength_score</b> and those scores contribute to buying pressure (recency + stacking affects the final
-              number).
+              This breakdown shows how points are calculated per signal using scoring rules (type weight + recency
+              multiplier). The final Buying Pressure score may also include stacking/normalization depending on how you
+              compute your org_account_scores.
             </div>
 
             <div
@@ -358,14 +460,19 @@ export default function RadarPage() {
                 background: "#fafafa",
               }}
             >
-              <div style={{ fontWeight: 700 }}>Recent signals (points)</div>
+              <div style={{ fontWeight: 700 }}>Signals contributing points</div>
+
               <div style={{ marginTop: 8, display: "grid", gap: 8 }}>
-                {whySignals.length === 0 ? (
-                  <div style={{ color: "#666" }}>No signals loaded yet.</div>
+                {breakdownLoading ? (
+                  <div style={{ color: "#666" }}>Loading breakdown…</div>
+                ) : breakdownError ? (
+                  <div style={{ color: "red" }}>❌ {breakdownError}</div>
+                ) : breakdown.length === 0 ? (
+                  <div style={{ color: "#666" }}>No breakdown available.</div>
                 ) : (
-                  whySignals.map((s) => (
+                  breakdown.map((b) => (
                     <div
-                      key={s.id}
+                      key={b.signal_id}
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -377,13 +484,18 @@ export default function RadarPage() {
                       }}
                     >
                       <div>
-                        <div style={{ fontWeight: 700 }}>{s.title}</div>
+                        <div style={{ fontWeight: 700 }}>{b.title}</div>
                         <div style={{ color: "#555", marginTop: 3 }}>
-                          {s.category} · {s.type} · {s.occurred_at}
+                          {b.category} · {b.type} · {b.occurred_at}
+                        </div>
+                        <div style={{ color: "#777", marginTop: 4, fontSize: 12 }}>
+                          strength {b.strength_score} × type {Number(b.type_weight).toFixed(2)} × recency{" "}
+                          {Number(b.recency_multiplier).toFixed(2)} · rule {b.rule}
                         </div>
                       </div>
-                      <div style={{ textAlign: "right", minWidth: 70 }}>
-                        <div style={{ fontSize: 18, fontWeight: 800 }}>{s.strength_score}</div>
+
+                      <div style={{ textAlign: "right", minWidth: 90 }}>
+                        <div style={{ fontSize: 18, fontWeight: 800 }}>{b.points}</div>
                         <div style={{ color: "#777", fontSize: 12 }}>points</div>
                       </div>
                     </div>
@@ -391,11 +503,11 @@ export default function RadarPage() {
                 )}
               </div>
 
-              {whySignals.length > 0 && (
+              {breakdown.length > 0 && !breakdownLoading && !breakdownError && (
                 <div style={{ marginTop: 10, color: "#444" }}>
-                  Approx signal points (last 5): <b>{approxSignalTotal}</b>
+                  Points from last {breakdown.length} signals: <b>{breakdownTotal}</b>
                   <div style={{ color: "#777", fontSize: 12, marginTop: 3 }}>
-                    Note: buying pressure may also include weighting for recency + stacking beyond the last 5 signals.
+                    Note: final Buying Pressure may also include stacking/normalization beyond this breakdown.
                   </div>
                 </div>
               )}
