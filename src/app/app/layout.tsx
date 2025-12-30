@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -55,7 +56,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <Link href="/app" style={{ textDecoration: "none", color: "#111" }}>
+            {/* ✅ Logo + brand */}
+            <Link
+              href="/app"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 10,
+                textDecoration: "none",
+                color: "#111",
+              }}
+            >
+              <Image
+                src="/logo/logo.svg" // change to /logo/logo.png if needed
+                alt="LifeScienceSignals"
+                width={28}
+                height={28}
+                priority
+              />
               <b>LifeScienceSignals</b>
             </Link>
 
