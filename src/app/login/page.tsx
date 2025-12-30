@@ -12,10 +12,16 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
 
+    // ✅ THIS is the key fix
+    // - localhost → uses http://localhost:3000
+    // - production → uses your Vercel domain
+    const siteUrl =
+      process.env.NEXT_PUBLIC_SITE_URL || window.location.origin;
+
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/app`,
+        emailRedirectTo: `${siteUrl}/app`,
       },
     });
 
@@ -45,6 +51,7 @@ export default function LoginPage() {
           }}
         />
         <button
+          type="submit"
           style={{
             width: "100%",
             padding: 12,
@@ -57,9 +64,16 @@ export default function LoginPage() {
         </button>
       </form>
 
-      {sent && <p style={{ marginTop: 12 }}>✅ Check your email for the login link.</p>}
-      {error && <p style={{ marginTop: 12, color: "red" }}>❌ {error}</p>}
+      {sent && (
+        <p style={{ marginTop: 12 }}>
+          ✅ Check your email for the login link.
+        </p>
+      )}
+      {error && (
+        <p style={{ marginTop: 12, color: "red" }}>
+          ❌ {error}
+        </p>
+      )}
     </div>
   );
 }
-
