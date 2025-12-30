@@ -70,8 +70,8 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
               <Image
                 src="/logo/logo.svg" // change to /logo/logo.png if needed
                 alt="LifeScienceSignals"
-                width={28}
-                height={28}
+                width={220}
+                height={140}
                 priority
               />
               <b>LifeScienceSignals</b>
