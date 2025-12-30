@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -14,8 +14,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const NavLink = ({ href, label }: { href: string; label: string }) => {
-    // ✅ stays active on sub-routes
-    const active = pathname.startsWith(href);
+    const active =
+      href === "/app"
+        ? pathname === "/app" // ✅ Home only active on exact match
+        : pathname.startsWith(href); // ✅ Other tabs active on sub-routes
 
     return (
       <Link
@@ -60,9 +62,9 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           }}
         >
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {/* ✅ Logo (visual only) */}
+            {/* ✅ Logo (visual only, not clickable) */}
             <Image
-              src="/logo/logo.svg" // or .png
+              src="/logo/logo.svg" // change to /logo/logo.png if needed
               alt="LifeScienceSignals"
               width={240}
               height={120}
