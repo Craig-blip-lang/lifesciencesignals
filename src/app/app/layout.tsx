@@ -14,7 +14,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   const NavLink = ({ href, label }: { href: string; label: string }) => {
-    // ✅ stays active on sub-routes like /app/radar/123
+    // ✅ stays active on sub-routes
     const active = pathname.startsWith(href);
 
     return (
@@ -59,27 +59,19 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             gap: 12,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {/* ✅ Logo only */}
-            <Link
-              href="/app"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                textDecoration: "none",
-              }}
-              title="Home"
-            >
-              <Image
-                src="/logo/logo.svg" // change to /logo/logo.png if needed
-                alt="LifeScienceSignals"
-                width={240}
-                height={120}
-                priority
-              />
-            </Link>
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            {/* ✅ Logo (visual only) */}
+            <Image
+              src="/logo/logo.svg" // or .png
+              alt="LifeScienceSignals"
+              width={240}
+              height={120}
+              priority
+            />
 
+            {/* ✅ Navigation */}
             <div style={{ display: "flex", gap: 8 }}>
+              <NavLink href="/app" label="Home" />
               <NavLink href="/app/radar" label="Radar" />
               <NavLink href="/app/filters" label="Filters" />
             </div>
