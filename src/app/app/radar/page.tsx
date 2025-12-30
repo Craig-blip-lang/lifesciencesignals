@@ -42,6 +42,14 @@ function scoreBand(score: number) {
   return { label: "Low", bg: "#f2f2f2", color: "#111" };
 }
 
+function daysAgo(dateString: string) {
+  const d = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  return Math.max(0, days);
+}
+
 function LegendPill({
   label,
   range,
@@ -81,6 +89,10 @@ export default function RadarPage() {
   const [rows, setRows] = useState<RadarRow[]>([]);
   const [expandedAccountId, setExpandedAccountId] = useState<string | null>(null);
   const [signals, setSignals] = useState<Record<string, SignalRow[]>>({});
+
+  // ✅ NEW: last signal timestamp per account
+  const [lastSignalAt, setLastSignalAt] = useState<Record<string, string>>({});
+
   const [status, setStatus] = useState<string>("Loading...");
   const [activeFilterName, setActiveFilterName] = useState<string>("");
 
@@ -204,7 +216,13 @@ export default function RadarPage() {
       return;
     }
 
-    setSignals((prev) => ({ ...prev, [accountId]: (data as SignalRow[]) || [] }));
+    const rows = (data as SignalRow[]) || [];
+    setSignals((prev) => ({ ...prev, [accountId]: rows }));
+
+    // ✅ NEW: store most recent signal date (for "Last signal: X days ago")
+    if (rows.length > 0) {
+      setLastSignalAt((prev) => ({ ...prev, [accountId]: rows[0].occurred_at }));
+    }
   }
 
   function toggleExpand(accountId: string) {
@@ -215,6 +233,9 @@ export default function RadarPage() {
 
   async function openWhy(accountId: string) {
     if (!orgId) return;
+
+    // Ensure we have last signal date too (nice to keep consistent)
+    await loadSignals(accountId);
 
     setWhyOpenFor(accountId);
     setBreakdown([]);
@@ -314,6 +335,8 @@ export default function RadarPage() {
       <div style={{ display: "grid", gap: 12 }}>
         {rows.map((r) => {
           const band = scoreBand(r.buying_pressure_index);
+          const last = lastSignalAt[r.account_id];
+
           return (
             <div key={r.account_id} style={{ border: "1px solid #ddd", borderRadius: 12, padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
@@ -336,6 +359,12 @@ export default function RadarPage() {
 
                   <div style={{ color: "#444", marginTop: 4 }}>
                     {r.account.segment || "—"} · {r.account.country || "—"} · {r.account.domain || "—"}
+                  </div>
+
+                  {/* ✅ NEW: "Last signal: X days ago" */}
+                  <div style={{ marginTop: 4, fontSize: 12, color: "#666" }}>
+                    Last signal:{" "}
+                    {last ? <b>{daysAgo(last)} days ago</b> : <span style={{ color: "#888" }}>—</span>}
                   </div>
                 </div>
 
