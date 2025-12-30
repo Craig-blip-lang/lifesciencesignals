@@ -56,16 +56,16 @@ export default function FiltersPage() {
         .select("org_id")
         .eq("user_id", auth.user.id);
 
-  if (memErr) {
-  setStatus("Membership error: " + memErr.message);
-  console.error(memErr);
-  return;
-}
+      if (memErr) {
+        setStatus("Membership error: " + memErr.message);
+        console.error(memErr);
+        return;
+      }
 
-if (!memberships || memberships.length === 0) {
-  setStatus("No organisation membership found for this user.");
-  return;
-}
+      if (!memberships || memberships.length === 0) {
+        setStatus("No organisation membership found for this user.");
+        return;
+      }
 
       const theOrgId = memberships[0].org_id as string;
       setOrgId(theOrgId);
@@ -129,38 +129,27 @@ if (!memberships || memberships.length === 0) {
     await loadFilters(orgId);
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
   return (
-    <div style={{ maxWidth: 980, margin: "40px auto", fontFamily: "Arial" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-end" }}>
         <div>
-          <h2 style={{ marginBottom: 6 }}>Filters</h2>
-          <div style={{ color: "#444" }}>
-            Signed in as <b>{email}</b> · Org <b>{orgName || "…"}</b>
+          <h2 style={{ margin: 0 }}>Filters</h2>
+          <div style={{ color: "#555", marginTop: 6 }}>
+            Org <b>{orgName || "…"}</b> · Signed in as <b>{email}</b>
           </div>
         </div>
-        <button
-          onClick={logout}
-          style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc", cursor: "pointer" }}
-        >
-          Log out
-        </button>
       </div>
 
-      <hr style={{ margin: "20px 0" }} />
+      <hr style={{ margin: "18px 0" }} />
 
-      <h3>Create a filter</h3>
+      <h3 style={{ marginTop: 0 }}>Create a filter</h3>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
-        <div>
+        <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 14 }}>
           <label>Filter name</label>
           <input
             value={filterName}
             onChange={(e) => setFilterName(e.target.value)}
-            style={{ width: "100%", padding: 10, border: "1px solid #ccc", borderRadius: 8 }}
+            style={{ width: "100%", padding: 10, border: "1px solid #ccc", borderRadius: 8, marginTop: 6 }}
           />
 
           <div style={{ marginTop: 12 }}>
@@ -169,7 +158,7 @@ if (!memberships || memberships.length === 0) {
               type="number"
               value={minScore}
               onChange={(e) => setMinScore(parseInt(e.target.value || "0", 10))}
-              style={{ width: "100%", padding: 10, border: "1px solid #ccc", borderRadius: 8 }}
+              style={{ width: "100%", padding: 10, border: "1px solid #ccc", borderRadius: 8, marginTop: 6 }}
             />
           </div>
 
@@ -178,7 +167,7 @@ if (!memberships || memberships.length === 0) {
             <select
               value={digest}
               onChange={(e) => setDigest(e.target.value)}
-              style={{ width: "100%", padding: 10, border: "1px solid #ccc", borderRadius: 8 }}
+              style={{ width: "100%", padding: 10, border: "1px solid #ccc", borderRadius: 8, marginTop: 6 }}
             >
               <option value="daily">Daily</option>
               <option value="weekly">Weekly</option>
@@ -187,12 +176,12 @@ if (!memberships || memberships.length === 0) {
           </div>
 
           <div style={{ marginTop: 12 }}>
-            <label>
+            <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <input
                 type="checkbox"
                 checked={emailAlerts}
                 onChange={(e) => setEmailAlerts(e.target.checked)}
-              />{" "}
+              />
               Email alerts enabled
             </label>
           </div>
@@ -202,7 +191,7 @@ if (!memberships || memberships.length === 0) {
             style={{
               marginTop: 14,
               padding: 12,
-              borderRadius: 8,
+              borderRadius: 10,
               border: "none",
               cursor: "pointer",
               width: "100%",
@@ -214,7 +203,7 @@ if (!memberships || memberships.length === 0) {
           {status && <p style={{ marginTop: 10 }}>{status}</p>}
         </div>
 
-        <div>
+        <div style={{ border: "1px solid #eee", borderRadius: 12, padding: 14 }}>
           <label>Countries</label>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
             {COUNTRY_OPTIONS.map((c) => (
@@ -257,21 +246,22 @@ if (!memberships || memberships.length === 0) {
         </div>
       </div>
 
-      <hr style={{ margin: "20px 0" }} />
+      <hr style={{ margin: "18px 0" }} />
 
-      <h3>Saved filters</h3>
+      <h3 style={{ marginTop: 0 }}>Saved filters</h3>
       {filters.length === 0 ? (
         <p>No filters yet. Create your first one above.</p>
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
           {filters.map((f) => (
-            <div key={f.id} style={{ border: "1px solid #ddd", borderRadius: 10, padding: 12 }}>
+            <div key={f.id} style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
               <b>{f.name}</b>
               <div style={{ color: "#444", marginTop: 6 }}>
-                Countries: {(f.countries || []).join(", ") || "Any"}<br />
-                Signal types: {(f.signal_types || []).join(", ") || "Any"}<br />
-                Min score: {f.min_score} · Digest: {f.digest_frequency} · Email:{" "}
-                {f.email_alerts ? "On" : "Off"}
+                Countries: {(f.countries || []).join(", ") || "Any"}
+                <br />
+                Signal types: {(f.signal_types || []).join(", ") || "Any"}
+                <br />
+                Min score: {f.min_score} · Digest: {f.digest_frequency} · Email: {f.email_alerts ? "On" : "Off"}
               </div>
             </div>
           ))}

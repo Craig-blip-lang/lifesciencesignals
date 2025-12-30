@@ -24,13 +24,12 @@ type SignalRow = {
 };
 
 export default function RadarPage() {
-  const [orgId, setOrgId] = useState<string>("");
   const [orgName, setOrgName] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
   const [rows, setRows] = useState<RadarRow[]>([]);
   const [expandedAccountId, setExpandedAccountId] = useState<string | null>(null);
   const [signals, setSignals] = useState<Record<string, SignalRow[]>>({});
   const [status, setStatus] = useState<string>("Loading...");
+  const [activeFilterName, setActiveFilterName] = useState<string>("");
 
   useEffect(() => {
     async function init() {
@@ -39,7 +38,6 @@ export default function RadarPage() {
         window.location.href = "/login";
         return;
       }
-      setEmail(auth.user.email || "");
 
       // get org
       const { data: memberships, error: memErr } = await supabase
@@ -54,9 +52,14 @@ export default function RadarPage() {
       }
 
       const theOrgId = memberships[0].org_id as string;
-      setOrgId(theOrgId);
 
-      const { data: org } = await supabase.from("orgs").select("name").eq("id", theOrgId).single();
+      const { data: org, error: orgErr } = await supabase
+        .from("orgs")
+        .select("name")
+        .eq("id", theOrgId)
+        .single();
+
+      if (orgErr) console.error(orgErr);
       setOrgName(org?.name || "");
 
       // ✅ Load most recent filter
@@ -70,6 +73,7 @@ export default function RadarPage() {
       if (filterErr) console.error(filterErr);
 
       const activeFilter = filterRows && filterRows.length > 0 ? filterRows[0] : null;
+      setActiveFilterName(activeFilter?.name || "");
 
       // ✅ Load radar rows
       const { data: radarRows, error: radarErr } = await supabase
@@ -122,7 +126,7 @@ export default function RadarPage() {
       }
 
       setRows(filtered as any);
-      setStatus(activeFilter ? `Filter applied: ${activeFilter.name}` : "");
+      setStatus(filtered.length === 0 ? "No accounts match your current filter." : "");
     }
 
     init();
@@ -146,11 +150,6 @@ export default function RadarPage() {
     setSignals((prev) => ({ ...prev, [accountId]: (data as SignalRow[]) || [] }));
   }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
-  }
-
   function toggleExpand(accountId: string) {
     const next = expandedAccountId === accountId ? null : accountId;
     setExpandedAccountId(next);
@@ -158,29 +157,42 @@ export default function RadarPage() {
   }
 
   return (
-    <div style={{ maxWidth: 980, margin: "40px auto", fontFamily: "Arial" }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-end" }}>
         <div>
-          <h2 style={{ marginBottom: 6 }}>Account Radar</h2>
-          <div style={{ color: "#444" }}>
-            Signed in as <b>{email}</b> · Org <b>{orgName || "…"}</b>
+          <h2 style={{ margin: 0 }}>Account Radar</h2>
+          <div style={{ color: "#555", marginTop: 6 }}>
+            Org <b>{orgName || "…"}</b>
+            {activeFilterName ? (
+              <>
+                {" "}
+                · Filter{" "}
+                <span
+                  style={{
+                    display: "inline-block",
+                    marginLeft: 4,
+                    padding: "2px 8px",
+                    borderRadius: 999,
+                    border: "1px solid #ddd",
+                    background: "#f7f7f7",
+                    fontSize: 12,
+                  }}
+                >
+                  {activeFilterName}
+                </span>
+              </>
+            ) : null}
           </div>
         </div>
-        <button
-          onClick={logout}
-          style={{ padding: 10, borderRadius: 8, border: "1px solid #ccc", cursor: "pointer" }}
-        >
-          Log out
-        </button>
       </div>
 
-      <hr style={{ margin: "20px 0" }} />
+      <hr style={{ margin: "18px 0" }} />
 
-      {status && <p>{status}</p>}
+      {status && <p style={{ marginTop: 0 }}>{status}</p>}
 
       <div style={{ display: "grid", gap: 12 }}>
         {rows.map((r) => (
-          <div key={r.account_id} style={{ border: "1px solid #ddd", borderRadius: 10, padding: 14 }}>
+          <div key={r.account_id} style={{ border: "1px solid #ddd", borderRadius: 12, padding: 14 }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
               <div>
                 <div style={{ fontSize: 16, fontWeight: 700 }}>{r.account.name}</div>
@@ -198,7 +210,13 @@ export default function RadarPage() {
             <div style={{ marginTop: 12 }}>
               <button
                 onClick={() => toggleExpand(r.account_id)}
-                style={{ padding: "8px 10px", borderRadius: 8, border: "1px solid #ccc", cursor: "pointer" }}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: "1px solid #ccc",
+                  cursor: "pointer",
+                  background: "white",
+                }}
               >
                 {expandedAccountId === r.account_id ? "Hide signals" : "View signals"}
               </button>
@@ -225,11 +243,6 @@ export default function RadarPage() {
           </div>
         ))}
       </div>
-
-      <hr style={{ margin: "20px 0" }} />
-      <p style={{ color: "#666" }}>
-        Next: daily email digests + instant alerts per filter.
-      </p>
     </div>
   );
 }
