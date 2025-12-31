@@ -268,6 +268,7 @@ export default function RadarPage() {
 
   const whyRow = whyOpenFor ? rows.find((r) => r.account_id === whyOpenFor) : null;
   const breakdownTotal = breakdown.reduce((sum, b) => sum + (b.points || 0), 0);
+  const scoreDelta = whyRow ? Math.max(0, (whyRow.buying_pressure_index || 0) - breakdownTotal) : 0;
 
   return (
     <div>
@@ -488,8 +489,8 @@ export default function RadarPage() {
 
             <div style={{ color: "#444", lineHeight: 1.5 }}>
               This breakdown shows how points are calculated per signal using scoring rules (type weight + recency
-              multiplier). The final Buying Pressure score may also include stacking/normalization depending on how you
-              compute your org_account_scores.
+              multiplier). The total Buying Pressure score can be higher than the sum below because it also includes
+              account-level momentum/stacking effects across signals.
             </div>
 
             <div
@@ -547,8 +548,12 @@ export default function RadarPage() {
               {breakdown.length > 0 && !breakdownLoading && !breakdownError && (
                 <div style={{ marginTop: 10, color: "#444" }}>
                   Points from last {breakdown.length} signals: <b>{breakdownTotal}</b>
-                  <div style={{ color: "#777", fontSize: 12, marginTop: 3 }}>
-                    Note: final Buying Pressure may also include stacking/normalization beyond this breakdown.
+
+                  {/* ✅ NEW: explicit explainer showing the delta */}
+                  <div style={{ color: "#666", fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
+                    <b>Why is Total higher?</b> The signal list totals <b>{breakdownTotal}</b> base points. We add{" "}
+                    <b>{scoreDelta}</b> extra points for <b>account-level momentum/stacking</b> (e.g., multiple recent
+                    signals across types), which is why the total is <b>{whyRow.buying_pressure_index}</b>.
                   </div>
                 </div>
               )}
