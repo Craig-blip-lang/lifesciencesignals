@@ -96,6 +96,9 @@ export default function RadarPage() {
   const [status, setStatus] = useState<string>("Loading...");
   const [activeFilterName, setActiveFilterName] = useState<string>("");
 
+  // ✅ NEW: page-level collapsible explainer
+  const [helpOpen, setHelpOpen] = useState<boolean>(false);
+
   // ✅ modal state
   const [whyOpenFor, setWhyOpenFor] = useState<string | null>(null);
 
@@ -309,39 +312,77 @@ export default function RadarPage() {
 
       <hr style={{ margin: "18px 0" }} />
 
-      {/* ✅ Radar explainer text (updated) */}
+      {/* ✅ Collapsible explainer (expand +) */}
       <div
         style={{
           border: "1px solid #ddd",
           borderRadius: 12,
-          padding: 14,
           background: "white",
           marginBottom: 14,
+          overflow: "hidden",
         }}
       >
-        <div style={{ fontWeight: 800, marginBottom: 6 }}>How to use Account Radar</div>
+        <button
+          onClick={() => setHelpOpen((v) => !v)}
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+            padding: 14,
+            border: 0,
+            background: "white",
+            cursor: "pointer",
+            textAlign: "left",
+          }}
+          aria-expanded={helpOpen}
+        >
+          <div style={{ fontWeight: 800 }}>How to use Account Radar</div>
+          <div
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              border: "1px solid #ddd",
+              display: "grid",
+              placeItems: "center",
+              fontWeight: 900,
+              color: "#111",
+              lineHeight: 1,
+              userSelect: "none",
+            }}
+            title={helpOpen ? "Collapse" : "Expand"}
+          >
+            {helpOpen ? "–" : "+"}
+          </div>
+        </button>
 
-        <div style={{ color: "#444", lineHeight: 1.55 }}>
-          <b>Account Radar</b> helps you focus on the accounts most likely to be actively buying, based on real-world
-          signals rather than assumptions. Each account is scored using a <b>Buying Pressure Index</b> that combines
-          signal strength, recency, and signal stacking.
-        </div>
+        {helpOpen && (
+          <div style={{ padding: "0 14px 14px 14px", color: "#444", lineHeight: 1.55 }}>
+            <div>
+              <b>Account Radar</b> helps you focus on the accounts most likely to be actively buying, based on real-world
+              signals rather than assumptions. Each account is scored using a <b>Buying Pressure Index</b> that combines
+              signal strength, recency, and signal stacking.
+            </div>
 
-        <div style={{ marginTop: 10, color: "#444", lineHeight: 1.55 }}>
-          Accounts are ranked by Buying Pressure so you can quickly identify high-intent opportunities. Use{" "}
-          <b>View signals</b> to see recent activity behind a score, and <b>Why this score?</b> to understand how
-          individual signals contributed to the total.
-        </div>
+            <div style={{ marginTop: 10 }}>
+              Accounts are ranked by Buying Pressure so you can quickly identify high-intent opportunities. Use{" "}
+              <b>View signals</b> to see recent activity behind a score, and <b>Why this score?</b> to understand how
+              individual signals contributed to the total.
+            </div>
 
-        <div style={{ marginTop: 10, color: "#444", lineHeight: 1.55 }}>
-          If filters are active, Radar only shows accounts that match your targeting criteria such as score threshold,
-          country, or signal type. If no accounts appear, try adjusting or clearing the current filter.
-        </div>
+            <div style={{ marginTop: 10 }}>
+              If filters are active, Radar only shows accounts that match your targeting criteria such as score
+              threshold, country, or signal type. If no accounts appear, try adjusting or clearing the current filter.
+            </div>
 
-        <div style={{ marginTop: 10, color: "#444", lineHeight: 1.55 }}>
-          Missing company details (industry, domain, or location) simply mean that information is not yet available —
-          scoring is still driven entirely by verified signals and their timing.
-        </div>
+            <div style={{ marginTop: 10 }}>
+              Missing company details (industry, domain, or location) simply mean that information is not yet available
+              — scoring is still driven entirely by verified signals and their timing.
+            </div>
+          </div>
+        )}
       </div>
 
       {status && <p style={{ marginTop: 0 }}>{status}</p>}
@@ -549,7 +590,7 @@ export default function RadarPage() {
                 <div style={{ marginTop: 10, color: "#444" }}>
                   Points from last {breakdown.length} signals: <b>{breakdownTotal}</b>
 
-                  {/* ✅ NEW: explicit explainer showing the delta */}
+                  {/* ✅ Explicit explainer showing the delta */}
                   <div style={{ color: "#666", fontSize: 12, marginTop: 6, lineHeight: 1.45 }}>
                     <b>Why is Total higher?</b> The signal list totals <b>{breakdownTotal}</b> base points. We add{" "}
                     <b>{scoreDelta}</b> extra points for <b>account-level momentum/stacking</b> (e.g., multiple recent
