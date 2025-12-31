@@ -129,6 +129,30 @@ export default function FiltersPage() {
     await loadFilters(orgId);
   }
 
+  async function deleteFilter(filterId: string) {
+    if (!orgId) return;
+
+    const ok = confirm("Delete this filter? This cannot be undone.");
+    if (!ok) return;
+
+    setStatus("Deleting filter...");
+
+    const { error } = await supabase
+      .from("filters")
+      .delete()
+      .eq("id", filterId)
+      .eq("org_id", orgId); // extra safety
+
+    if (error) {
+      console.error(error);
+      setStatus("Error deleting filter.");
+      return;
+    }
+
+    setStatus("Filter deleted ✅");
+    await loadFilters(orgId);
+  }
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-end" }}>
@@ -177,11 +201,7 @@ export default function FiltersPage() {
 
           <div style={{ marginTop: 12 }}>
             <label style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <input
-                type="checkbox"
-                checked={emailAlerts}
-                onChange={(e) => setEmailAlerts(e.target.checked)}
-              />
+              <input type="checkbox" checked={emailAlerts} onChange={(e) => setEmailAlerts(e.target.checked)} />
               Email alerts enabled
             </label>
           </div>
@@ -254,15 +274,43 @@ export default function FiltersPage() {
       ) : (
         <div style={{ display: "grid", gap: 12 }}>
           {filters.map((f) => (
-            <div key={f.id} style={{ border: "1px solid #ddd", borderRadius: 12, padding: 12 }}>
-              <b>{f.name}</b>
-              <div style={{ color: "#444", marginTop: 6 }}>
-                Countries: {(f.countries || []).join(", ") || "Any"}
-                <br />
-                Signal types: {(f.signal_types || []).join(", ") || "Any"}
-                <br />
-                Min score: {f.min_score} · Digest: {f.digest_frequency} · Email: {f.email_alerts ? "On" : "Off"}
+            <div
+              key={f.id}
+              style={{
+                border: "1px solid #ddd",
+                borderRadius: 12,
+                padding: 12,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "flex-start",
+              }}
+            >
+              <div>
+                <b>{f.name}</b>
+                <div style={{ color: "#444", marginTop: 6, lineHeight: 1.5 }}>
+                  Countries: {(f.countries || []).join(", ") || "Any"}
+                  <br />
+                  Signal types: {(f.signal_types || []).join(", ") || "Any"}
+                  <br />
+                  Min score: {f.min_score} · Digest: {f.digest_frequency} · Email: {f.email_alerts ? "On" : "Off"}
+                </div>
               </div>
+
+              <button
+                onClick={() => deleteFilter(f.id)}
+                style={{
+                  padding: "8px 10px",
+                  borderRadius: 10,
+                  border: "1px solid #ccc",
+                  cursor: "pointer",
+                  background: "white",
+                  color: "#900",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Delete
+              </button>
             </div>
           ))}
         </div>
