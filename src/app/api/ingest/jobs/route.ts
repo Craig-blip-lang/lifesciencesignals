@@ -3,6 +3,6 @@
 export async function GET() {
   return NextResponse.json({
     ok: true,
-    message: "Jobs ingest endpoint is live.",
+    message: "Jobs ingest route is live.",
   });
 }
