@@ -11,7 +11,7 @@ type RadarRow = {
     domain: string | null;
     country: string | null;
     segment: string | null;
-  };
+  } | null; // ✅ account can be null if join blocked / missing
 };
 
 type SignalRow = {
@@ -308,7 +308,7 @@ export default function RadarPage() {
 
       <hr style={{ margin: "18px 0" }} />
 
-      {/* ✅ Radar explainer text */}
+      {/* ✅ Radar explainer text (updated) */}
       <div
         style={{
           border: "1px solid #ddd",
@@ -319,14 +319,27 @@ export default function RadarPage() {
         }}
       >
         <div style={{ fontWeight: 800, marginBottom: 6 }}>How to use Account Radar</div>
+
         <div style={{ color: "#444", lineHeight: 1.55 }}>
-          <b>Account Radar</b> ranks companies by how likely they are to be actively buying — based on real-world
-          signals. Each account receives a <b>Buying Pressure</b> score combining signal strength and recency. Higher
-          scores indicate stronger, more recent buying intent.
-          <div style={{ marginTop: 10, color: "#444" }}>
-            Use <b>View signals</b> to see recent activity behind the score, and <b>Why this score?</b> for the point-by-point
-            breakdown.
-          </div>
+          <b>Account Radar</b> helps you focus on the accounts most likely to be actively buying, based on real-world
+          signals rather than assumptions. Each account is scored using a <b>Buying Pressure Index</b> that combines
+          signal strength, recency, and signal stacking.
+        </div>
+
+        <div style={{ marginTop: 10, color: "#444", lineHeight: 1.55 }}>
+          Accounts are ranked by Buying Pressure so you can quickly identify high-intent opportunities. Use{" "}
+          <b>View signals</b> to see recent activity behind a score, and <b>Why this score?</b> to understand how
+          individual signals contributed to the total.
+        </div>
+
+        <div style={{ marginTop: 10, color: "#444", lineHeight: 1.55 }}>
+          If filters are active, Radar only shows accounts that match your targeting criteria such as score threshold,
+          country, or signal type. If no accounts appear, try adjusting or clearing the current filter.
+        </div>
+
+        <div style={{ marginTop: 10, color: "#444", lineHeight: 1.55 }}>
+          Missing company details (industry, domain, or location) simply mean that information is not yet available —
+          scoring is still driven entirely by verified signals and their timing.
         </div>
       </div>
 
@@ -342,7 +355,7 @@ export default function RadarPage() {
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
                 <div>
                   <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <div style={{ fontSize: 16, fontWeight: 700 }}>{r.account.name}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700 }}>{r.account?.name ?? "(Unknown account)"}</div>
                     <span
                       style={{
                         padding: "2px 8px",
@@ -358,13 +371,12 @@ export default function RadarPage() {
                   </div>
 
                   <div style={{ color: "#444", marginTop: 4 }}>
-                    {r.account.segment || "—"} · {r.account.country || "—"} · {r.account.domain || "—"}
+                    {r.account?.segment || "—"} · {r.account?.country || "—"} · {r.account?.domain || "—"}
                   </div>
 
                   {/* ✅ NEW: "Last signal: X days ago" */}
                   <div style={{ marginTop: 4, fontSize: 12, color: "#666" }}>
-                    Last signal:{" "}
-                    {last ? <b>{daysAgo(last)} days ago</b> : <span style={{ color: "#888" }}>—</span>}
+                    Last signal: {last ? <b>{daysAgo(last)} days ago</b> : <span style={{ color: "#888" }}>—</span>}
                   </div>
                 </div>
 
@@ -452,7 +464,7 @@ export default function RadarPage() {
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
               <div>
-                <div style={{ fontSize: 16, fontWeight: 800 }}>{whyRow.account.name}</div>
+                <div style={{ fontSize: 16, fontWeight: 800 }}>{whyRow.account?.name ?? "(Unknown account)"}</div>
                 <div style={{ color: "#555", marginTop: 4 }}>
                   Total Buying Pressure: <b>{whyRow.buying_pressure_index}</b>
                 </div>
