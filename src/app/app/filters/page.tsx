@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 
 type FilterRow = {
@@ -14,16 +14,121 @@ type FilterRow = {
 };
 
 const COUNTRY_OPTIONS = ["IE", "UK", "DE", "FR", "NL", "BE", "ES", "IT", "CH", "SE", "DK", "PL", "AT"];
-const SIGNAL_OPTIONS = [
-  "CSV_HIRING",
-  "ANNEX11_HIRING",
-  "DATA_INTEGRITY_HIRING",
-  "QA_SYSTEMS_HIRING",
-  "SERIALIZATION_HIRING",
-  "MES_LIMS_HIRING",
-  "FACILITY_EXPANSION",
-  "NEW_SITE_STARTUP",
+
+type SignalGroup = { label: string; items: string[] };
+
+// Expanded + grouped signals (UI-friendly)
+const SIGNAL_GROUPS: SignalGroup[] = [
+  {
+    label: "Validation & Quality",
+    items: [
+      "CSV_HIRING",
+      "ANNEX11_HIRING",
+      "DATA_INTEGRITY_HIRING",
+      "QA_SYSTEMS_HIRING",
+      "AUDIT_READINESS",
+      "GXP_COMPLIANCE",
+      "ELECTRONIC_RECORDS",
+      "ELECTRONIC_SIGNATURES",
+      "QUALITY_COMPLIANCE",
+      "QUALITY_ENGINEERING",
+      "QUALITY_ASSURANCE",
+    ],
+  },
+  {
+    label: "Manufacturing & Operations",
+    items: [
+      "MANUFACTURING_MANAGEMENT",
+      "MANUFACTURING_ENGINEERING",
+      "PROCESS_ENGINEERING",
+      "PRODUCTION_ENGINEERING",
+      "OPERATIONS_MANAGEMENT",
+      "TECHNICAL_OPERATIONS",
+      "CONTINUOUS_IMPROVEMENT",
+      "LEAN_MANUFACTURING",
+      "OPERATIONAL_EXCELLENCE",
+    ],
+  },
+  {
+    label: "Automation & Digital",
+    items: [
+      "INDUSTRIAL_AUTOMATION",
+      "PLC_SCADA",
+      "DCS_AUTOMATION",
+      "ROBOTICS_AUTOMATION",
+      "INDUSTRY_4_0",
+      "SMART_FACTORY",
+      "DIGITAL_MANUFACTURING",
+    ],
+  },
+  {
+    label: "MES / LIMS / MOM",
+    items: [
+      "MES_LIMS_HIRING",
+      "MES_IMPLEMENTATION",
+      "LIMS_ADMIN",
+      "MOM_SYSTEMS",
+      "SHOP_FLOOR_SYSTEMS",
+      "BATCH_RECORDS",
+      "ELECTRONIC_BATCH_RECORDS",
+    ],
+  },
+  {
+    label: "Traceability & Supply Chain",
+    items: [
+      "SERIALIZATION_HIRING",
+      "TRACK_AND_TRACE",
+      "TRACEABILITY_PROGRAM",
+      "SUPPLY_CHAIN_VISIBILITY",
+      "WAREHOUSE_SYSTEMS",
+      "WMS_TMS",
+      "LOGISTICS_TECH",
+      "ANTI_COUNTERFEITING",
+    ],
+  },
+  {
+    label: "IT & Architecture",
+    items: [
+      "IT_OT_CONVERGENCE",
+      "SYSTEMS_INTEGRATION",
+      "ENTERPRISE_ARCHITECTURE",
+      "SAP_MANUFACTURING",
+      "ERP_INTEGRATION",
+      "DATA_ARCHITECTURE",
+      "MASTER_DATA_MANAGEMENT",
+    ],
+  },
+  {
+    label: "CapEx & Facilities",
+    items: [
+      "CAPITAL_PROJECTS",
+      "FACILITY_EXPANSION",
+      "NEW_SITE_STARTUP",
+      "GREENFIELD_SITE",
+      "BROWNFIELD_UPGRADE",
+      "ENGINEERING_PROJECTS",
+      "TECH_TRANSFER",
+    ],
+  },
+  {
+    label: "Sustainability",
+    items: [
+      "SUSTAINABILITY_SYSTEMS",
+      "CARBON_TRACKING",
+      "CSRD_READINESS",
+      "EUDR_COMPLIANCE",
+      "DIGITAL_PRODUCT_PASSPORT",
+      "RESPONSIBLE_SOURCING",
+    ],
+  },
 ];
+
+// Flattened list (kept for logic convenience)
+const SIGNAL_OPTIONS = SIGNAL_GROUPS.flatMap((g) => g.items);
+
+function prettySignal(s: string) {
+  return s.replaceAll("_", " ").toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export default function FiltersPage() {
   const [email, setEmail] = useState("");
@@ -40,6 +145,87 @@ export default function FiltersPage() {
   const [minScore, setMinScore] = useState<number>(120);
   const [digest, setDigest] = useState<string>("daily");
   const [emailAlerts, setEmailAlerts] = useState<boolean>(true);
+
+  // UI helpers
+  const [signalSearch, setSignalSearch] = useState("");
+  const [alertsOnly, setAlertsOnly] = useState(false);
+  const [highIntentOnly, setHighIntentOnly] = useState(false);
+
+  // Optional: mark which are "high intent"
+  const HIGH_INTENT = useMemo(
+    () =>
+      new Set<string>([
+        "CSV_HIRING",
+        "ANNEX11_HIRING",
+        "DATA_INTEGRITY_HIRING",
+        "QA_SYSTEMS_HIRING",
+        "MES_LIMS_HIRING",
+        "MES_IMPLEMENTATION",
+        "ELECTRONIC_BATCH_RECORDS",
+        "SERIALIZATION_HIRING",
+        "TRACK_AND_TRACE",
+        "FACILITY_EXPANSION",
+        "NEW_SITE_STARTUP",
+        "CAPITAL_PROJECTS",
+        "PLC_SCADA",
+        "INDUSTRIAL_AUTOMATION",
+        "IT_OT_CONVERGENCE",
+        "SYSTEMS_INTEGRATION",
+      ]),
+    []
+  );
+
+  // Optional: mark which are alert-eligible (keep lean; adjust later)
+  const ALERT_ELIGIBLE = useMemo(
+    () =>
+      new Set<string>([
+        "CSV_HIRING",
+        "ANNEX11_HIRING",
+        "DATA_INTEGRITY_HIRING",
+        "QA_SYSTEMS_HIRING",
+        "AUDIT_READINESS",
+        "GXP_COMPLIANCE",
+        "ELECTRONIC_RECORDS",
+        "ELECTRONIC_SIGNATURES",
+        "MANUFACTURING_MANAGEMENT",
+        "INDUSTRIAL_AUTOMATION",
+        "PLC_SCADA",
+        "DCS_AUTOMATION",
+        "MES_LIMS_HIRING",
+        "MES_IMPLEMENTATION",
+        "ELECTRONIC_BATCH_RECORDS",
+        "SERIALIZATION_HIRING",
+        "TRACK_AND_TRACE",
+        "TRACEABILITY_PROGRAM",
+        "SUPPLY_CHAIN_VISIBILITY",
+        "IT_OT_CONVERGENCE",
+        "SYSTEMS_INTEGRATION",
+        "CAPITAL_PROJECTS",
+        "FACILITY_EXPANSION",
+        "NEW_SITE_STARTUP",
+        "TECH_TRANSFER",
+        "CARBON_TRACKING",
+        "CSRD_READINESS",
+        "DIGITAL_PRODUCT_PASSPORT",
+      ]),
+    []
+  );
+
+  const filteredSignalGroups = useMemo(() => {
+    const q = signalSearch.trim().toLowerCase();
+
+    const match = (s: string) => {
+      if (alertsOnly && !ALERT_ELIGIBLE.has(s)) return false;
+      if (highIntentOnly && !HIGH_INTENT.has(s)) return false;
+      if (!q) return true;
+      return s.toLowerCase().includes(q) || prettySignal(s).toLowerCase().includes(q);
+    };
+
+    return SIGNAL_GROUPS.map((g) => ({
+      label: g.label,
+      items: g.items.filter(match),
+    })).filter((g) => g.items.length > 0);
+  }, [signalSearch, alertsOnly, highIntentOnly, ALERT_ELIGIBLE, HIGH_INTENT]);
 
   useEffect(() => {
     async function init() {
@@ -70,11 +256,7 @@ export default function FiltersPage() {
       const theOrgId = memberships[0].org_id as string;
       setOrgId(theOrgId);
 
-      const { data: org, error: orgErr } = await supabase
-        .from("orgs")
-        .select("name")
-        .eq("id", theOrgId)
-        .single();
+      const { data: org, error: orgErr } = await supabase.from("orgs").select("name").eq("id", theOrgId).single();
 
       if (orgErr) console.error(orgErr);
       setOrgName(org?.name || "");
@@ -104,16 +286,31 @@ export default function FiltersPage() {
     return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
   }
 
+  function selectAllSignalsInView() {
+    const inView = new Set<string>();
+    filteredSignalGroups.forEach((g) => g.items.forEach((s) => inView.add(s)));
+    setSignalTypes(Array.from(new Set([...signalTypes, ...Array.from(inView)])));
+  }
+
+  function clearSignalsInView() {
+    const inView = new Set<string>();
+    filteredSignalGroups.forEach((g) => g.items.forEach((s) => inView.add(s)));
+    setSignalTypes(signalTypes.filter((s) => !inView.has(s)));
+  }
+
   async function createFilter() {
     if (!orgId) return;
 
     setStatus("Saving filter...");
 
+    // If user selects all signals, store null to mean "Any" (optional nice behavior)
+    const storeSignals = signalTypes.length === SIGNAL_OPTIONS.length ? null : signalTypes;
+
     const { error } = await supabase.from("filters").insert({
       org_id: orgId,
       name: filterName,
       countries,
-      signal_types: signalTypes,
+      signal_types: storeSignals,
       min_score: minScore,
       digest_frequency: digest,
       email_alerts: emailAlerts,
@@ -137,11 +334,7 @@ export default function FiltersPage() {
 
     setStatus("Deleting filter...");
 
-    const { error } = await supabase
-      .from("filters")
-      .delete()
-      .eq("id", filterId)
-      .eq("org_id", orgId); // extra safety
+    const { error } = await supabase.from("filters").delete().eq("id", filterId).eq("org_id", orgId); // extra safety
 
     if (error) {
       console.error(error);
@@ -244,23 +437,116 @@ export default function FiltersPage() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <label>Signal types</label>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
-              {SIGNAL_OPTIONS.map((s) => (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12 }}>
+              <label>Signal types</label>
+              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ color: "#666", fontSize: 12 }}>
+                  Selected: <b>{signalTypes.length}</b> / {SIGNAL_OPTIONS.length}
+                </span>
                 <button
-                  key={s}
-                  onClick={() => setSignalTypes(toggle(signalTypes, s))}
+                  onClick={() => setSignalTypes(SIGNAL_OPTIONS)}
                   style={{
-                    padding: "8px 10px",
-                    borderRadius: 999,
+                    padding: "6px 10px",
+                    borderRadius: 10,
                     border: "1px solid #ccc",
                     cursor: "pointer",
-                    background: signalTypes.includes(s) ? "#ddd" : "white",
+                    background: "white",
                   }}
                 >
-                  {s.replaceAll("_", " ")}
+                  Select all
                 </button>
+                <button
+                  onClick={() => setSignalTypes([])}
+                  style={{
+                    padding: "6px 10px",
+                    borderRadius: 10,
+                    border: "1px solid #ccc",
+                    cursor: "pointer",
+                    background: "white",
+                  }}
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+
+            <input
+              value={signalSearch}
+              onChange={(e) => setSignalSearch(e.target.value)}
+              placeholder="Search signals..."
+              style={{
+                width: "100%",
+                padding: 10,
+                border: "1px solid #ccc",
+                borderRadius: 8,
+                marginTop: 8,
+              }}
+            />
+
+            <div style={{ display: "flex", gap: 10, marginTop: 10, flexWrap: "wrap" }}>
+              <label style={{ display: "flex", gap: 8, alignItems: "center", color: "#333" }}>
+                <input type="checkbox" checked={alertsOnly} onChange={(e) => setAlertsOnly(e.target.checked)} />
+                Alerts only
+              </label>
+              <label style={{ display: "flex", gap: 8, alignItems: "center", color: "#333" }}>
+                <input type="checkbox" checked={highIntentOnly} onChange={(e) => setHighIntentOnly(e.target.checked)} />
+                High intent only
+              </label>
+
+              <button
+                onClick={selectAllSignalsInView}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 10,
+                  border: "1px solid #ccc",
+                  cursor: "pointer",
+                  background: "white",
+                }}
+              >
+                Select shown
+              </button>
+              <button
+                onClick={clearSignalsInView}
+                style={{
+                  padding: "6px 10px",
+                  borderRadius: 10,
+                  border: "1px solid #ccc",
+                  cursor: "pointer",
+                  background: "white",
+                }}
+              >
+                Clear shown
+              </button>
+            </div>
+
+            <div style={{ marginTop: 12, display: "grid", gap: 14 }}>
+              {filteredSignalGroups.map((group) => (
+                <div key={group.label}>
+                  <div style={{ fontWeight: 700, marginBottom: 8 }}>{group.label}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {group.items.map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setSignalTypes(toggle(signalTypes, s))}
+                        style={{
+                          padding: "8px 10px",
+                          borderRadius: 999,
+                          border: "1px solid #ccc",
+                          cursor: "pointer",
+                          background: signalTypes.includes(s) ? "#ddd" : "white",
+                        }}
+                        title={s}
+                      >
+                        {prettySignal(s)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               ))}
+
+              {filteredSignalGroups.length === 0 && (
+                <div style={{ color: "#666", marginTop: 6 }}>No signals match your search/filters.</div>
+              )}
             </div>
           </div>
         </div>
